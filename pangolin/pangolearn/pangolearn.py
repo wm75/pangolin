@@ -15,6 +15,10 @@ import sys
 import os
 import multiprocessing as mp
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 def findReferenceSeq(referenceFile):
 	currentSeq = ""
 
@@ -30,7 +34,7 @@ def findReferenceSeq(referenceFile):
 def clean(referenceSeq,x, loc):
 	x = x.upper()
 
-	if x == 'T' or x == 'A' or x == 'G' or x == 'C' or x == '-':
+	if x in {'T', 'A', 'G', 'C', '-'}:
 		return x, False
 
 	if x == 'U':
@@ -177,6 +181,7 @@ def assign_to_chunk(idList, seqList, refRow, referenceId, loaded_model, imputati
 
 def assign_lineage(header_file,model_file,reference_file,sequences_file,outfile,threads=1):
 
+	print("Running pangoLEARN assignment")
 	dirname = os.path.dirname(__file__)
 
 	referenceSeq = ""
@@ -220,11 +225,13 @@ def assign_lineage(header_file,model_file,reference_file,sequences_file,outfile,
 
 		refRow = [r==c for r in rs for c in categories]
 
-		print("loading model " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+		print("Loading model " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
 		loaded_model = joblib.load(model_file)
+		print("Finished loading model " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
 
 		# write predictions to a file
 		for idList, seqList in readInAndFormatData(referenceSeq,imputationScores,sequences_file, indiciesToKeep):
+
 			job = pool.apply_async(assign_to_chunk, (idList, seqList, refRow, referenceId, loaded_model,
 													 imputationScores, columns, categories, q))
 			jobs.append(job)
@@ -242,4 +249,4 @@ def assign_lineage(header_file,model_file,reference_file,sequences_file,outfile,
 	pool.close()
 	pool.join()
 
-	print("complete " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
+	print("Complete " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
